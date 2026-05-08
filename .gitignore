@@ -1,0 +1,41 @@
+# Secrets
+.env
+*.key
+*.pem
+credentials.json
+
+# Data volumes
+data/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Large binary state
+state.db
+*.sqlite3
+chroma.sqlite3
+
+# Logs
+*.log
+logs/
+
+# Node
+node_modules/
+
+# Temporary
+tmp/
+temp/
+*.tmp

@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover"/>
+<title>Hermes Desktop — Kate Dashboard</title>
+<link rel="stylesheet" href="https://unpkg.com/xterm@5.3.0/css/xterm.min.css" crossorigin/>
+<style>
+:root{--bg:#08090a;--bg2:#0f1011;--surface:rgba(255,255,255,.035);--surface2:rgba(255,255,255,.055);--txt:#f7f8f8;--muted:#8a8f98;--soft:#d0d6e0;--line:rgba(255,255,255,.08);--accent:#7170ff;--accent2:#5e6ad2;--ok:#27a644;--warn:#f5c451;--bad:#ff5d73;--radius:18px;--safe-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%;background:radial-gradient(circle at 20% -10%,rgba(113,112,255,.23),transparent 34%),radial-gradient(circle at 90% 0,rgba(94,106,210,.16),transparent 28%),var(--bg);color:var(--txt);font-family:Inter,system-ui,-apple-system,sans-serif;font-feature-settings:"cv01","ss03"}
+a{color:#a7a6ff;text-decoration:none}button,input,select,textarea{font:inherit}
+.shell{max-width:1540px;margin:0 auto;padding:16px 16px calc(86px + var(--safe-bottom))}
+header{position:sticky;top:0;z-index:20;background:linear-gradient(180deg,rgba(8,9,10,.96),rgba(8,9,10,.78));backdrop-filter:blur(18px);border-bottom:1px solid var(--line)}
+.topbar{max-width:1540px;margin:0 auto;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}
+.orb{width:38px;height:38px;border-radius:12px;background:radial-gradient(circle at 30% 25%,#fff,#9d8cff 24%,#5e6ad2 58%,#171a35);box-shadow:0 0 30px rgba(113,112,255,.45)}
+h1{font-size:18px;letter-spacing:-.28px;margin:0;font-weight:590}
+.subtitle{font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:58vw}
+.top-actions{display:flex;gap:8px;align-items:center}
+.btn,button{border:1px solid var(--line);background:rgba(255,255,255,.04);color:var(--txt);border-radius:12px;padding:10px 12px;font-weight:510;cursor:pointer;min-height:42px}
+.btn.primary,button.primary{background:linear-gradient(135deg,var(--accent2),var(--accent));border-color:transparent}.btn.ghost{display:inline-flex;align-items:center;gap:6px}
+.danger{background:rgba(255,93,115,.1);border-color:rgba(255,93,115,.35);color:#ffd8de}
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}
+.card{background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.022));border:1px solid var(--line);border-radius:var(--radius);padding:15px;box-shadow:0 16px 42px rgba(0,0,0,.28);min-width:0}
+.card h2{margin:0 0 12px;font-size:14px;font-weight:590;color:#eef1ff;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.span3{grid-column:span 3}.span4{grid-column:span 4}.span6{grid-column:span 6}.span12{grid-column:span 12}
+.metric{font-size:28px;font-weight:590;letter-spacing:-.7px}.muted{color:var(--muted)}.small{font-size:12px}.mono{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace}
+.pill{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:999px;padding:6px 9px;margin:3px 3px 3px 0;font-size:12px;background:rgba(255,255,255,.025);white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted)}.ok{background:var(--ok)}.warn{background:var(--warn)}.bad{background:var(--bad)}
+.scroll{max-height:340px;overflow:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;font-size:12px}td,th{border-bottom:1px solid rgba(255,255,255,.07);padding:9px 7px;text-align:left;vertical-align:top}th{color:var(--muted);font-weight:510;position:sticky;top:0;background:#111214;z-index:1}
+textarea,input,select{width:100%;background:rgba(0,0,0,.28);border:1px solid var(--line);border-radius:13px;color:var(--txt);padding:12px;outline:none}textarea{min-height:92px;resize:vertical}
+.chatlog{height:290px;overflow:auto;background:rgba(0,0,0,.22);border:1px solid var(--line);border-radius:16px;padding:10px;-webkit-overflow-scrolling:touch}
+.msg{margin:8px 0;padding:10px 12px;border-radius:14px;white-space:pre-wrap;font-size:14px;line-height:1.45}
+.user{background:#1b2246;margin-left:13%}.assistant{background:#251d43;margin-right:13%}
+.chatControls{display:grid;grid-template-columns:1fr 220px;gap:10px;margin-top:10px}
+
+/* Terminal */
+.term-wrap{height:70vh;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:#0c0e11}
+.term-toolbar{display:flex;gap:8px;padding:8px 12px;background:rgba(0,0,0,.3);border-bottom:1px solid var(--line);align-items:center}
+.term-toolbar .status-orb{width:10px;height:10px;border-radius:50%;background:var(--ok);flex-shrink:0}
+.term-toolbar .status-orb.disconnected{background:var(--bad)}
+.xterm{height:calc(100% - 42px);padding:6px}.xterm-viewport::-webkit-scrollbar{width:6px}
+.xterm-viewport::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:4px}
+
+/* File explorer */
+.file-tree{max-height:70vh;overflow:auto;background:rgba(0,0,0,.18);border:1px solid var(--line);border-radius:12px;padding:4px 0}
+.file-item{display:flex;align-items:center;gap:8px;padding:7px 14px;cursor:pointer;border-radius:6px;margin:0 4px;font-size:13px}
+.file-item:hover{background:rgba(255,255,255,.045)}
+.file-item .icon{font-size:15px;width:20px;text-align:center}
+.file-item .fname{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.file-item .meta{color:var(--muted);font-size:11px;white-space:nowrap}
+.file-bread{display:flex;gap:4px;flex-wrap:wrap;padding:8px 2px;font-size:13px}
+.file-bread span{cursor:pointer;color:var(--accent)}.file-bread span:hover{text-decoration:underline}
+.file-bread .sep{color:var(--muted)}.file-viewer{background:rgba(0,0,0,.22);border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:10px;max-height:50vh;overflow:auto;white-space:pre-wrap;font-size:12px;font-family:"JetBrains Mono",monospace}
+.upload-zone{border:2px dashed var(--line);border-radius:12px;padding:20px;text-align:center;margin:10px 0;cursor:pointer;transition:.2s}
+.upload-zone.dragover{border-color:var(--accent);background:rgba(113,112,255,.08)}
+
+/* Graph - unchanged */
+.graphWrap{position:relative;min-height:520px}
+.graphToolbar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}.graphToolbar input{flex:1;min-width:180px}.graphToolbar select{width:160px}
+.graphStage{position:relative;height:70vh;border:1px solid var(--line);border-radius:16px;background:radial-gradient(circle at 50% 50%,rgba(113,112,255,.08),transparent 55%),#05060b;overflow:hidden;touch-action:none}
+.graphStage.fullscreen{position:fixed;inset:0;z-index:1000;border-radius:0;height:auto}.graphStage svg{width:100%;height:100%;display:block}
+.link{stroke:#5f68a6;stroke-opacity:.48;stroke-width:1}
+.node circle{stroke:rgba(255,255,255,.55);stroke-width:1;filter:drop-shadow(0 0 10px rgba(113,112,255,.18))}
+.node text{font-size:11px;fill:#e9ecff;paint-order:stroke;stroke:#05060b;stroke-width:3px;stroke-linejoin:round;pointer-events:none}
+.node.drawer text{display:none}.node.drawer.selected text,.node.drawer:hover text{display:block}
+.node.hidden,.link.hidden{opacity:.08}
+.node.selected circle{stroke:#fff;stroke-width:2.5;filter:drop-shadow(0 0 18px rgba(113,112,255,.75))}
+.graphHint{position:absolute;left:12px;bottom:10px;color:var(--muted);font-size:11px;background:rgba(0,0,0,.35);border:1px solid var(--line);border-radius:999px;padding:6px 9px}
+.drawerPanel{position:absolute;right:12px;top:62px;width:min(360px,calc(100% - 24px));max-height:70%;overflow:auto;background:rgba(12,14,27,.94);border:1px solid var(--line);border-radius:16px;padding:13px;box-shadow:0 20px 80px rgba(0,0,0,.45);display:none}.drawerPanel.show{display:block}
+.drawerPanel h3{margin:0 0 8px;font-size:14px}.drawerPanel p{font-size:12px;line-height:1.45;color:var(--soft);white-space:pre-wrap}.drawerPanel .close{float:right;min-height:30px;padding:4px 8px;border-radius:8px}
+.roomChips{display:flex;gap:7px;overflow:auto;padding-bottom:4px}
+.chip{border:1px solid var(--line);background:rgba(255,255,255,.035);border-radius:999px;padding:7px 10px;font-size:12px;white-space:nowrap;cursor:pointer}
+.chip.active{background:rgba(113,112,255,.22);color:#fff}
+
+/* Mobile nav */
+.mobileNav{position:fixed;left:10px;right:10px;bottom:calc(10px + var(--safe-bottom));z-index:50;display:none;background:rgba(15,16,17,.9);border:1px solid var(--line);border-radius:22px;padding:7px;backdrop-filter:blur(18px);box-shadow:0 15px 50px rgba(0,0,0,.45)}
+.mobileNav button{flex:1;min-height:42px;padding:8px 6px;border-radius:15px;font-size:11px;background:transparent}
+.mobileNav button.active{background:rgba(113,112,255,.22);color:#fff}
+
+@media(max-width:980px){.span3,.span4,.span6,.span12{grid-column:span 12}.top-actions .ghost{display:none}.graphStage{height:55vh}.chatControls{grid-template-columns:1fr}.mobileNav{display:flex}.shell{padding:12px 10px calc(92px + var(--safe-bottom))}.card{border-radius:16px;padding:13px}.metric{font-size:24px}.scroll{max-height:55vh}.section{display:none}.section.active{display:block}.grid{display:block}.grid .card{margin-bottom:12px}.subtitle{max-width:62vw}.topbar{padding:12px 10px}h1{font-size:16px}.orb{width:34px;height:34px}.user{margin-left:5%}.assistant{margin-right:5%}.term-wrap{height:55vh}}
+</style>
+</head>
+<body>
+<header><div class="topbar"><div class="brand"><div class="orb"></div><div><h1>Hermes Desktop</h1><div class="subtitle" id="headerSub">Kate · Strategic Dashboard</div></div></div><div class="top-actions"><button class="primary" onclick="refreshAll()">Actualiser</button></div></div></header>
+<div class="shell">
+
+<section class="section active" data-section="home"><div class="grid">
+  <article class="card span3"><h2>Système</h2><div id="statusPills"></div><div class="small muted" id="time"></div></article>
+  <article class="card span3"><h2>URL Cloudflare</h2><div class="small muted">Active</div><div id="cfUrl" class="small" style="word-break:break-all;margin-top:8px"></div></article>
+  <article class="card span3"><h2>Modèle vocal</h2><div class="metric" id="modelMetric">—</div><div class="muted small">OpenRouter</div></article>
+  <article class="card span3"><h2>Mémoire</h2><div class="metric" id="memMetric">—</div><div class="muted small">drawers MemPalace</div></article>
+  <article class="card span6"><h2>Rappels et tâches</h2><div class="scroll"><table id="jobsTable"><thead><tr><th>Nom</th><th>État</th><th>Prochaine</th><th>Statut</th></tr></thead><tbody></tbody></table></div></article>
+  <article class="card span6"><h2>Calendrier</h2><div class="scroll"><table id="calTable"><thead><tr><th>Début</th><th>Événement</th><th>Lieu</th></tr></thead><tbody></tbody></table></div></article>
+  <article class="card span6"><h2>Sessions récentes</h2><div class="scroll"><table id="sessionsTable"><thead><tr><th>Source</th><th>Titre</th><th>Msgs</th></tr></thead><tbody></tbody></table></div></article>
+  <article class="card span6"><h2>Actions système</h2><button onclick="checkServices()">Vérifier services</button><button class="danger" style="margin-left:8px" onclick="restartGateway()">Redémarrer gateway</button><pre id="actionOut" class="small muted" style="white-space:pre-wrap;max-height:180px;overflow:auto"></pre></article>
+</div></section>
+
+<section class="section" data-section="chat"><article class="card"><h2>Chat avec Kate</h2><div class="chatlog" id="chatlog"></div><div class="chatControls"><textarea id="chatInput" placeholder="Écris à Kate..."></textarea><div><select id="modelSelect"><option value="deepseek/deepseek-v4-pro">DeepSeek V4 Pro</option><option value="deepseek/deepseek-v4-flash">DeepSeek V4 Flash</option><option value="anthropic/claude-sonnet-4.6">Claude Sonnet 4.6</option><option value="openai/gpt-4o-mini">GPT-4o mini</option></select><button class="primary" style="width:100%;margin-top:10px" onclick="sendChat()">Envoyer</button></div></div></article></section>
+
+<section class="section" data-section="memory"><article class="card graphWrap"><h2>Graphe mémoire MemPalace</h2><div class="graphToolbar"><input id="graphSearch" placeholder="Rechercher dans la mémoire..." oninput="applyGraphFilter()"><select id="roomFilter" onchange="applyGraphFilter()"><option value="all">Toutes les rooms</option></select><button onclick="zoomGraph(1.25)">+</button><button onclick="zoomGraph(0.8)">-</button><button onclick="centerGraph()">Centrer</button><button onclick="toggleGraphFullscreen()">Plein écran</button></div><div class="roomChips" id="roomChips"></div><div class="graphStage" id="graphStage"><svg id="graphSvg"></svg><div class="graphHint">+/− ou pinch/scroll = zoom · drag = déplacer · tap = détail</div><div class="drawerPanel" id="drawerPanel"><button class="close" onclick="closeDrawerPanel()">×</button><h3 id="drawerTitle"></h3><div class="small muted" id="drawerMeta"></div><p id="drawerText"></p></div></div></article></section>
+
+<section class="section" data-section="terminal"><article class="card"><h2>Terminal <span class="small muted">/opt/data · bash</span></h2><div class="term-wrap"><div class="term-toolbar"><span class="status-orb" id="termOrb"></span><span class="small" id="termStatus">Déconnexion</span><span style="flex:1"></span><button class="btn" style="padding:5px 10px;min-height:30px;font-size:11px" onclick="termFit()">Fit</button><button class="btn" style="padding:5px 10px;min-height:30px;font-size:11px" onclick="termReset()">Reset</button></div><div id="terminal"></div></div></article></section>
+
+<section class="section" data-section="files"><article class="card"><h2>Explorateur de fichiers <span class="small muted" id="filePathLabel">/opt/data</span></h2><div class="file-bread" id="fileBread"></div><div class="file-tree" id="fileTree"></div><div id="fileViewer" class="file-viewer" style="display:none"></div><div class="upload-zone" id="uploadZone" onclick="document.getElementById('fileUpload').click()">Déposer ou cliquer pour uploader un fichier</div><input type="file" id="fileUpload" style="display:none" multiple onchange="handleUpload(this.files)"></article></section>
+
+</div>
+
+<nav class="mobileNav"><button class="active" onclick="showSection('home',this)">Cockpit</button><button onclick="showSection('chat',this)">Chat</button><button onclick="showSection('memory',this)">Mémoire</button><button onclick="showSection('terminal',this)">Terminal</button><button onclick="showSection('files',this)">Fichiers</button></nav>
+
+<script src="https://unpkg.com/xterm@5.3.0/lib/xterm.min.js" crossorigin></script>
+<script src="https://unpkg.com/xterm-addon-fit@0.8.0/lib/xterm-addon-fit.min.js" crossorigin></script>
+<script>
+const $=s=>document.querySelector(s);const $$=s=>Array.from(document.querySelectorAll(s));
+let graphData=null,graphSim=null,graphTransform={x:0,y:0,k:1},selectedRoom='all';
+let term=null,termFitAddon=null,termWs=null;
+function pill(label,ok){return `<span class="pill"><span class="dot ${ok?'ok':'bad'}"></span>${label}</span>`}
+function fmtTs(v){if(!v)return'—';if(typeof v==='number')return new Date(v*1000).toLocaleString('fr-FR');return String(v).replace('T',' ').replace('+00:00',' UTC')}
+async function j(url,opts){const r=await fetch(url,opts);if(!r.ok)throw new Error(await r.text());return await r.json()}
+function showSection(name,btn){$$('.section').forEach(s=>s.classList.toggle('active',s.dataset.section===name));$$('.mobileNav button').forEach(b=>b.classList.remove('active'));if(btn)btn.classList.add('active');if(name==='memory'&&graphData)setTimeout(()=>drawGraph(graphData),80);if(name==='terminal'&&!term)initTerminal()}
+
+/* === COCKPIT === */
+async function loadStatus(){const s=await j('/api/dashboard/status');$('#statusPills').innerHTML=pill('Voice',s.voice_local)+pill('Cloudflare',s.cloudflared)+pill('MCP',s.mempalace_mcp)+pill('DB',s.mempalace_db)+pill('DeepSeek',s.config.deepseek_configured);$('#time').textContent=s.time_utc;$('#cfUrl').innerHTML=s.cloudflare_url?`<a href="${s.cloudflare_url}" target="_blank">${s.cloudflare_url}</a>`:'—';$('#modelMetric').textContent=s.config.voice_model.split('/').pop()}
+async function loadJobs(){const d=await j('/api/dashboard/jobs');$('#jobsTable tbody').innerHTML=d.jobs.map(x=>`<tr><td>${x.name||'—'}</td><td>${x.enabled?'actif':'off'} / ${x.state||''}</td><td>${fmtTs(x.next_run_at)}</td><td>${x.last_status||'—'}</td></tr>`).join('')}
+async function loadCalendar(){const d=await j('/api/dashboard/calendar');$('#calTable tbody').innerHTML=d.events.map(e=>`<tr><td>${e.start||'—'}</td><td>${e.summary||'—'}</td><td>${e.location||''}</td></tr>`).join('')||'<tr><td colspan="3" class="muted">Aucun événement.</td></tr>'}
+async function loadSessions(){const d=await j('/api/dashboard/sessions');$('#sessionsTable tbody').innerHTML=d.sessions.map(s=>`<tr><td>${s.source||'—'}</td><td>${s.title||s.id}</td><td>${s.message_count||0}</td></tr>`).join('')}
+
+/* === CHAT === */
+function addMsg(cls,text){const el=document.createElement('div');el.className='msg '+cls;el.textContent=text;$('#chatlog').appendChild(el);$('#chatlog').scrollTop=999999;return el}
+async function sendChat(){const msg=$('#chatInput').value.trim();if(!msg)return;$('#chatInput').value='';addMsg('user',msg);const pending=addMsg('assistant','Kate réfléchit...');try{const d=await j('/api/dashboard/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg,model:$('#modelSelect').value})});pending.textContent=d.answer}catch(e){pending.textContent='Erreur: '+e.message}}
+
+/* === SYSTEM === */
+async function checkServices(){$('#actionOut').textContent='Vérification...';try{const d=await j('/api/dashboard/actions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'check_services'})});$('#actionOut').textContent=JSON.stringify(d,null,2);await loadStatus()}catch(e){$('#actionOut').textContent=e.message}}
+async function restartGateway(){try{const d=await j('/api/dashboard/actions',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'restart_gateway'})});$('#actionOut').textContent=JSON.stringify(d,null,2)}catch(e){$('#actionOut').textContent='Verrouillé: '+e.message}}
+
+/* === TERMINAL === */
+async function initTerminal(){if(term){$('#terminal').innerHTML='';term.dispose();term=null}
+termFitAddon=new FitAddon.FitAddon();
+term=new Terminal({cursorBlink:true,cursorStyle:'bar',fontSize:13,fontFamily:'"JetBrains Mono","Fira Code",monospace',theme:{background:'#0c0e11',foreground:'#e1e4ed',cursor:'#7170ff',selection:'rgba(113,112,255,.35)',black:'#1d1f27',red:'#ff5d73',green:'#27a644',yellow:'#f5c451',blue:'#6b7cff',magenta:'#c792ea',cyan:'#5bd4ff',white:'#e1e4ed',brightBlack:'#434758',brightRed:'#ff8a92',brightGreen:'#4cd964',brightYellow:'#ffd866',brightBlue:'#8996ff',brightMagenta:'#d9a6f7',brightCyan:'#7ae4ff',brightWhite:'#ffffff'}});
+term.loadAddon(termFitAddon);
+term.open(document.getElementById('terminal'));
+termFitAddon.fit();
+
+const proto=location.protocol==='https:'?'wss:':'ws:';
+const wsUrl=proto+'//'+location.host+'/api/dashboard/terminal';
+$('#termStatus').textContent='Connexion...';
+$('#termOrb').className='status-orb warn';
+termWs=new WebSocket(wsUrl);
+termWs.onopen=()=>{$('#termStatus').textContent='Connecté';$('#termOrb').className='status-orb';term.focus()};
+termWs.onclose=()=>{$('#termStatus').textContent='Déconnecté';$('#termOrb').className='status-orb disconnected'};
+termWs.onerror=()=>{if($('#termStatus').textContent!=='Déconnecté'){$('#termStatus').textContent='Erreur';$('#termOrb').className='status-orb disconnected'}};
+termWs.onmessage=ev=>{if(ev.data instanceof Blob){ev.data.arrayBuffer().then(buf=>term.write(new Uint8Array(buf)))}else{term.write(ev.data)}};
+term.onData(data=>{if(termWs&&termWs.readyState===WebSocket.OPEN)termWs.send(JSON.stringify({type:'input',data}))});
+term.onResize(({cols,rows})=>{if(termWs&&termWs.readyState===WebSocket.OPEN)termWs.send(JSON.stringify({type:'resize',cols,rows}))});
+window.addEventListener('resize',()=>{try{termFitAddon.fit()}catch(e){}})}
+function termFit(){try{termFitAddon.fit();const{cols,rows}=term;if(termWs&&termWs.readyState===WebSocket.OPEN)termWs.send(JSON.stringify({type:'resize',cols,rows}))}catch(e){}}
+function termReset(){if(term){term.dispose();term=null;if(termWs){try{termWs.close()}catch(e){}termWs=null}initTerminal()}}
+
+/* === FILES === */
+let fileHistory=['/opt/data'];
+async function loadFiles(path){if(!path){path=fileHistory[fileHistory.length-1]||'/opt/data'}
+try{const d=await j('/api/dashboard/files?path='+encodeURIComponent(path));if(!d.ok){$('#fileTree').innerHTML=`<div class="file-item muted">Erreur: ${d.error||'Accès refusé'}</div>`;return}
+$('#filePathLabel').textContent=d.path;
+let i=fileHistory.indexOf(d.path);if(i>=0)fileHistory=fileHistory.slice(0,i+1);else fileHistory.push(d.path);
+renderBread(d.path,d.parent);
+if(d.entries.length===0){$('#fileTree').innerHTML='<div class="file-item muted">Dossier vide</div>';return}
+let html='';d.entries.forEach(e=>{const icon=e.is_dir?'📁':'📄';const sz=e.is_dir?'—':(e.size>1048576?(e.size/1048576).toFixed(1)+' MB':e.size>1024?(e.size/1024).toFixed(1)+' KB':e.size+' B');html+=`<div class="file-item" onclick="${e.is_dir?`loadFiles('${e.path}')`:`viewFile('${e.path}')`}"><span class="icon">${icon}</span><span class="fname">${e.name}</span><span class="meta">${sz}</span></div>`});
+$('#fileTree').innerHTML=html}catch(e){$('#fileTree').innerHTML=`<div class="file-item muted">Erreur: ${e.message}</div>`}}
+
+function renderBread(current,parent){let html='';if(parent){html+=`<span onclick="loadFiles('${parent}')">..</span><span class="sep">/</span>`}
+const parts=current.split('/');let acc='';parts.forEach((p,i)=>{if(!p)return;acc+=('/'+p);html+=`<span onclick="loadFiles('${acc}')">${p}</span>`;if(i<parts.length-1)html+=`<span class="sep">/</span>`});$('#fileBread').innerHTML=html}
+
+async function viewFile(path){try{const d=await j('/api/dashboard/files/read?path='+encodeURIComponent(path));if(!d.ok){$('#fileViewer').style.display='block';$('#fileViewer').textContent='Erreur: '+d.error;return}
+$('#fileViewer').style.display='block';$('#fileViewer').textContent=d.text?d.text:'[Fichier binaire — '+d.size+' octets]'}catch(e){$('#fileViewer').style.display='block';$('#fileViewer').textContent='Erreur: '+e.message}}
+
+async function handleUpload(files){if(!files||!files.length)return
+const dest=fileHistory[fileHistory.length-1]||'/opt/data'
+for(const file of files){try{const form=new FormData();form.append('file',file);form.append('path',dest);const r=await fetch('/api/dashboard/files/upload',{method:'POST',body:form});const d=await r.json();if(!d.ok)alert('Upload failed: '+d.error)}catch(e){alert('Upload error: '+e.message)}}
+loadFiles(dest)}
+
+// Drag-and-drop upload
+const uz=$('#uploadZone')
+uz.addEventListener('dragover',e=>{e.preventDefault();uz.classList.add('dragover')})
+uz.addEventListener('dragleave',()=>uz.classList.remove('dragover'))
+uz.addEventListener('drop',e=>{e.preventDefault();uz.classList.remove('dragover');handleUpload(e.dataTransfer.files)})
+
+/* === MEMORY GRAPH (unchanged logic) === */
+async function loadGraph(){graphData=await j('/api/dashboard/memory-graph');$('#memMetric').textContent=graphData.count;populateRooms(graphData);drawGraph(graphData)}
+function populateRooms(g){const rooms=[...new Set(g.nodes.filter(n=>n.type==='room').map(n=>n.label))].sort();$('#roomFilter').innerHTML='<option value="all">Toutes les rooms</option>'+rooms.map(r=>`<option>${r}</option>`).join('');$('#roomChips').innerHTML='<button class="chip active" onclick="setRoom(\'all\',this)">Toutes</button>'+rooms.map(r=>`<button class="chip" onclick="setRoom('${r}',this)">${r}</button>`).join('')}
+function setRoom(room,el){selectedRoom=room;$('#roomFilter').value=room;$$('.chip').forEach(c=>c.classList.remove('active'));el.classList.add('active');applyGraphFilter()}
+function colorFor(n){if(n.type==='wing')return'#b28cff';if(n.type==='room')return'#27a644';const colors={ip_strategy:'#7170ff',conversations_vocales:'#ff8bd1',projets:'#f5c451',clients_prospects:'#5bd4ff',general:'#8a8f98'};return colors[n.room]||'#6b7cff'}
+function drawGraph(g){const stage=$('#graphStage'),svg=$('#graphSvg');const w=stage.clientWidth||800,h=stage.clientHeight||510;svg.innerHTML='';const root=document.createElementNS('http://www.w3.org/2000/svg','g');svg.appendChild(root);const nodes=g.nodes.map((n,i)=>({...n,x:n.x||w/2+(Math.random()-.5)*180,y:n.y||h/2+(Math.random()-.5)*180,vx:0,vy:0}));const map=Object.fromEntries(nodes.map(n=>[n.id,n]));const links=g.links.map(l=>({source:map[l.source],target:map[l.target]})).filter(l=>l.source&&l.target);graphSim={nodes,links,root,svg,w,h,drag:null};links.forEach(l=>{const line=document.createElementNS('http://www.w3.org/2000/svg','line');line.setAttribute('class','link');l.el=line;root.appendChild(line)});nodes.forEach(n=>{const group=document.createElementNS('http://www.w3.org/2000/svg','g');group.setAttribute('class','node '+(n.type==='drawer'?'drawer':n.type));group.style.cursor='grab';const c=document.createElementNS('http://www.w3.org/2000/svg','circle');c.setAttribute('r',n.size||8);c.setAttribute('fill',colorFor(n));const tx=document.createElementNS('http://www.w3.org/2000/svg','text');tx.textContent=n.label;tx.setAttribute('x',(n.size||8)+7);tx.setAttribute('y',4);group.appendChild(c);group.appendChild(tx);n.el=group;root.appendChild(group);group.addEventListener('pointerdown',e=>startNodeDrag(e,n));group.addEventListener('click',e=>{e.stopPropagation();showNodeDetail(n)});});setupGraphPanZoom(svg,root);stage.onclick=e=>{if(e.target===svg)closeDrawerPanel()};applyGraphFilter();setTimeout(centerGraph,250);animateGraph()}
+function animateGraph(){if(!graphSim)return;const {nodes,links,w,h,root}=graphSim;for(let t=0;t<2;t++){links.forEach(l=>{const dx=l.target.x-l.source.x,dy=l.target.y-l.source.y,d=Math.hypot(dx,dy)||1,target=l.target.type==='drawer'?86:135,f=(d-target)*0.006;l.source.vx+=dx/d*f;l.source.vy+=dy/d*f;l.target.vx-=dx/d*f;l.target.vy-=dy/d*f});for(let i=0;i<nodes.length;i++)for(let k=i+1;k<nodes.length;k++){const a=nodes[i],b=nodes[k],dx=b.x-a.x,dy=b.y-a.y,d2=dx*dx+dy*dy+20,f=(a.type==='drawer'||b.type==='drawer'?260:520)/d2;a.vx-=dx*f;a.vy-=dy*f;b.vx+=dx*f;b.vy+=dy*f}nodes.forEach(n=>{if(n.fx==null){n.vx+=(w/2-n.x)*0.002;n.vy+=(h/2-n.y)*0.002;n.x+=n.vx;n.y+=n.vy;n.vx*=0.86;n.vy*=0.86;n.x=Math.max(20,Math.min(w-20,n.x));n.y=Math.max(20,Math.min(h-20,n.y))}else{n.x=n.fx;n.y=n.fy}})}links.forEach(l=>{l.el.setAttribute('x1',l.source.x);l.el.setAttribute('y1',l.source.y);l.el.setAttribute('x2',l.target.x);l.el.setAttribute('y2',l.target.y)});nodes.forEach(n=>n.el.setAttribute('transform',`translate(${n.x},${n.y})`));root.setAttribute('transform',`translate(${graphTransform.x},${graphTransform.y}) scale(${graphTransform.k})`);requestAnimationFrame(animateGraph)}
+function applyZoomAt(factor,cx,cy){const stage=$('#graphStage');const rect=stage.getBoundingClientRect();const mx=(cx==null?rect.width/2:cx-rect.left),my=(cy==null?rect.height/2:cy-rect.top);const old=graphTransform.k;const nk=Math.max(.18,Math.min(5,old*factor));graphTransform.x=mx-(mx-graphTransform.x)*nk/old;graphTransform.y=my-(my-graphTransform.y)*nk/old;graphTransform.k=nk}
+function zoomGraph(factor){applyZoomAt(factor)}
+function setupGraphPanZoom(svg,root){let pan=null;const pointers=new Map();let pinch=null;svg.onwheel=e=>{e.preventDefault();applyZoomAt(e.deltaY<0?1.18:.84,e.clientX,e.clientY)};svg.onpointerdown=e=>{pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});try{svg.setPointerCapture(e.pointerId)}catch{};if(pointers.size===2){const pts=[...pointers.values()];const dx=pts[1].x-pts[0].x,dy=pts[1].y-pts[0].y;pinch={dist:Math.hypot(dx,dy)||1,k:graphTransform.k,x:graphTransform.x,y:graphTransform.y,cx:(pts[0].x+pts[1].x)/2,cy:(pts[0].y+pts[1].y)/2};pan=null}else if(pointers.size===1&&e.target===svg){pan={x:e.clientX,y:e.clientY,tx:graphTransform.x,ty:graphTransform.y}}};svg.onpointermove=e=>{if(!pointers.has(e.pointerId))return;pointers.set(e.pointerId,{x:e.clientX,y:e.clientY});if(pointers.size===2&&pinch){const pts=[...pointers.values()];const dx=pts[1].x-pts[0].x,dy=pts[1].y-pts[0].y;const dist=Math.hypot(dx,dy)||1;graphTransform.k=pinch.k;graphTransform.x=pinch.x;graphTransform.y=pinch.y;applyZoomAt(dist/pinch.dist,pinch.cx,pinch.cy)}else if(pan&&pointers.size===1){graphTransform.x=pan.tx+e.clientX-pan.x;graphTransform.y=pan.ty+e.clientY-pan.y}};const end=e=>{pointers.delete(e.pointerId);try{svg.releasePointerCapture(e.pointerId)}catch{};pinch=null;pan=null};svg.onpointerup=end;svg.onpointercancel=end;svg.onpointerleave=e=>{if(pointers.has(e.pointerId))end(e)}}
+function startNodeDrag(e,n){e.stopPropagation();const rect=$('#graphSvg').getBoundingClientRect();const x=(e.clientX-rect.left-graphTransform.x)/graphTransform.k;const y=(e.clientY-rect.top-graphTransform.y)/graphTransform.k;n.fx=x;n.fy=y;n.el.setPointerCapture(e.pointerId);const move=ev=>{const qx=(ev.clientX-rect.left-graphTransform.x)/graphTransform.k;const qy=(ev.clientY-rect.top-graphTransform.y)/graphTransform.k;n.fx=qx;n.fy=qy};const up=ev=>{n.el.releasePointerCapture(ev.pointerId);n.el.removeEventListener('pointermove',move);n.el.removeEventListener('pointerup',up);setTimeout(()=>{n.fx=null;n.fy=null},600)};n.el.addEventListener('pointermove',move);n.el.addEventListener('pointerup',up)}
+function applyGraphFilter(){if(!graphSim)return;const q=($('#graphSearch').value||'').toLowerCase();const room=$('#roomFilter').value||selectedRoom||'all';graphSim.nodes.forEach(n=>{const text=(n.label+' '+(n.room||'')+' '+n.id).toLowerCase();const matchText=!q||text.includes(q);const matchRoom=room==='all'||n.type==='wing'||n.label===room||n.room===room;n.visible=matchText&&matchRoom;n.el.classList.toggle('hidden',!n.visible)});graphSim.links.forEach(l=>l.el.classList.toggle('hidden',!(l.source.visible&&l.target.visible)))}
+function showNodeDetail(n){$$('.node').forEach(el=>el.classList.remove('selected'));n.el.classList.add('selected');$('#drawerTitle').textContent=n.label;$('#drawerMeta').textContent=`${n.type}${n.room?' · '+n.room:''} · ${n.id}`;$('#drawerText').textContent=n.label;$('#drawerPanel').classList.add('show')}
+function closeDrawerPanel(){$('#drawerPanel').classList.remove('show');$$('.node').forEach(el=>el.classList.remove('selected'))}
+function centerGraph(){if(!graphSim){graphTransform={x:0,y:0,k:1};return}const visible=graphSim.nodes.filter(n=>n.visible!==false);if(!visible.length){graphTransform={x:0,y:0,k:1};return}const minX=Math.min(...visible.map(n=>n.x)),maxX=Math.max(...visible.map(n=>n.x)),minY=Math.min(...visible.map(n=>n.y)),maxY=Math.max(...visible.map(n=>n.y));const stage=$('#graphStage'),w=stage.clientWidth||800,h=stage.clientHeight||510;const bw=Math.max(1,maxX-minX),bh=Math.max(1,maxY-minY);const k=Math.max(.35,Math.min(2,Math.min((w-80)/bw,(h-80)/bh)));graphTransform={k,x:w/2-(minX+bw/2)*k,y:h/2-(minY+bh/2)*k}}
+function toggleGraphFullscreen(){const s=$('#graphStage');s.classList.toggle('fullscreen');setTimeout(()=>graphData&&drawGraph(graphData),120)}
+
+/* === BOOT === */
+async function refreshAll(){await Promise.allSettled([loadStatus(),loadJobs(),loadCalendar(),loadSessions(),loadGraph()]);loadFiles('/opt/data')}
+refreshAll();setInterval(()=>{loadStatus();loadJobs()},30000);
+</script>
+</body>
+</html>

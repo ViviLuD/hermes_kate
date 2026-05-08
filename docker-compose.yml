@@ -1,0 +1,207 @@
+# ─────────────────────────────────────────────────────────────────────
+# Hermes Kate — Docker Compose
+# DELSOL AI Sovereign IP & Intangible AI Stack
+# ─────────────────────────────────────────────────────────────────────
+#
+# Services:
+#   hermes        Agent Core + Gateway (Telegram/Discord) + CLI
+#   voice         Kate Voice Interface (WebSocket + REST)
+#   middleware    S3 Attention + MetaCog middleware
+#   night-engine  Autonomous night cycle (dreams, oracles, briefings)
+#   cloudflared   Cloudflare Zero Trust tunnel (optional, for public access)
+#
+# Quick start:
+#   1. cp .env.example .env  → fill in your API keys
+#   2. cp config.yaml.example /opt/data/config.yaml  → adjust if needed
+#   3. docker compose up -d
+#   4. docker compose logs -f hermes
+#
+# Persistence:
+#   All data lives in ./data/ (mounted to /opt/data inside containers).
+#   Back up this directory to preserve memory, sessions, logs, and state.
+# ─────────────────────────────────────────────────────────────────────
+
+version: "3.8"
+
+services:
+  # ── HERMES CORE ──────────────────────────────────────────────────
+  hermes:
+    build: .
+    image: hermes-kate:latest
+    container_name: hermes-core
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+
+    environment:
+      # ── Identity ──
+      - HERMES_NAME=Kate
+      - HERMES_HOME=/opt/data
+
+      # ── LLM Providers (required) ──
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY:-}
+
+      # ── Messaging ──
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      - TELEGRAM_ALLOWED_USERS=${TELEGRAM_ALLOWED_USERS:-}
+
+      # ── Voice ──
+      - ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY:-}
+
+      # ── MCP / External Services ──
+      - EPO_OPS_CONSUMER_KEY=${EPO_OPS_CONSUMER_KEY:-}
+      - EPO_OPS_CONSUMER_SECRET=${EPO_OPS_CONSUMER_SECRET:-}
+      - USPTO_API_KEY=${USPTO_API_KEY:-}
+      - CRUNCHBASE_API_KEY=${CRUNCHBASE_API_KEY:-}
+      - TAVILY_API_KEY=${TAVILY_API_KEY:-}
+      - FRED_API_KEY=${FRED_API_KEY:-}
+      - ACLED_ACCESS_TOKEN=${ACLED_ACCESS_TOKEN:-}
+      - NASA_FIRMS_API_KEY=${NASA_FIRMS_API_KEY:-}
+      - EIA_API_KEY=${EIA_API_KEY:-}
+      - TOMTOM_API_KEY=${TOMTOM_API_KEY:-}
+      - WINDY_API_KEY=${WINDY_API_KEY:-}
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+
+      # ── Runtime ──
+      - PYTHONUNBUFFERED=1
+      - HERMES_MAX_ITERATIONS=${HERMES_MAX_ITERATIONS:-90}
+
+      # ── UID/GID mapping (for host volume permissions) ──
+      - HERMES_UID=${HERMES_UID:-1000}
+      - HERMES_GID=${HERMES_GID:-1000}
+
+    ports:
+      - "8765:8765"   # Voice Interface WebSocket
+      - "8766:8766"   # S3/MetaCog Middleware
+      - "4860:4860"   # ttyd Web Terminal (Hermes Desktop)
+      - "8899:8899"   # Download HTTP server
+
+    volumes:
+      # ── Persistent data ──
+      - ./data:/opt/data
+
+      # ── Config files (single files to avoid overwriting entire dir) ──
+      - ./config.yaml:/opt/data/config.yaml:ro
+      - ./.env:/opt/data/.env:ro
+
+      # ── Skills (mounted so edits survive rebuild) ──
+      - ./skills:/opt/data/skills
+
+      # ── SSH keys for git push ──
+      - ${HOME:-~}/.ssh:/home/hermes/.ssh:ro
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8765/health", "||", "exit", "1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+    # Reasonable resource limits for a VPS
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+          cpus: "2"
+        reservations:
+          memory: 1G
+          cpus: "0.5"
+
+  # ── VOICE INTERFACE ─────────────────────────────────────────────
+  voice:
+    image: hermes-kate:latest
+    container_name: kate-voice
+    restart: unless-stopped
+    command: python3 /opt/data/voice_interface/server.py
+    depends_on:
+      hermes:
+        condition: service_healthy
+
+    environment:
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      - PYTHONUNBUFFERED=1
+
+    ports:
+      - "8765:8765"
+
+    volumes:
+      - ./data:/opt/data
+      - ./config.yaml:/opt/data/config.yaml:ro
+      - ./.env:/opt/data/.env:ro
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8765/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ── S3 / METACOG MIDDLEWARE ─────────────────────────────────────
+  middleware:
+    image: hermes-kate:latest
+    container_name: kate-middleware
+    restart: unless-stopped
+    command: python3 /opt/data/kate_evolution/middleware.py
+    depends_on:
+      hermes:
+        condition: service_healthy
+
+    environment:
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      - PYTHONUNBUFFERED=1
+
+    ports:
+      - "8766:8766"
+
+    volumes:
+      - ./data:/opt/data
+      - ./.env:/opt/data/.env:ro
+
+  # ── NIGHT ENGINE (cron-driven) ──────────────────────────────────
+  night-engine:
+    image: hermes-kate:latest
+    container_name: kate-night-engine
+    restart: unless-stopped
+    command: >
+      sh -c "
+      # Install cron + setup crontab for Night Engine cycles
+      apt-get update -qq && apt-get install -y -qq cron &&
+      echo '0 2 * * * /opt/data/kate_night_engine/night_engine.py dream >> /opt/data/kate_night_engine/logs/cron_dream.log 2>&1' | crontab - &&
+      echo '0 3 * * * /opt/data/kate_night_engine/night_engine.py oracle >> /opt/data/kate_night_engine/logs/cron_oracle.log 2>&1' | crontab - &&
+      echo '25 6 * * * /opt/data/kate_night_engine/dream_registry.py >> /opt/data/kate_night_engine/logs/cron_registry.log 2>&1' | crontab - &&
+      echo '35 6 * * * /opt/data/kate_night_engine/night_engine.py brief && /opt/data/kate_night_engine/deliver_brief.py >> /opt/data/kate_night_engine/logs/cron_brief.log 2>&1' | crontab - &&
+      echo '40 6 * * * /opt/data/kate_night_engine/scripts/github_dream_pusher.py >> /opt/data/kate_night_engine/logs/cron_github.log 2>&1' | crontab - &&
+      mkdir -p /opt/data/kate_night_engine/logs &&
+      cron -f
+      "
+    depends_on:
+      hermes:
+        condition: service_healthy
+
+    environment:
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+      - PYTHONUNBUFFERED=1
+
+    volumes:
+      - ./data:/opt/data
+      - ./config.yaml:/opt/data/config.yaml:ro
+      - ./.env:/opt/data/.env:ro
+
+  # ── CLOUDFLARE TUNNEL (optional — public access without opening ports) ──
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: kate-tunnel
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN:-}
+    network_mode: host
+    profiles:
+      - tunnel
+    # Enable with: docker compose --profile tunnel up -d cloudflared
