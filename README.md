@@ -217,6 +217,51 @@ R: Oui, il contient l'historique des sessions, les checkpoints, et les hooks d'a
 
 ---
 
+## Écosystème & Dépendances
+
+### Repos GitHub utilisés
+
+| Repo | Rôle |
+|------|------|
+| [ViviLuD/hermes_kate](https://github.com/ViviLuD/hermes_kate) | Déploiement Kate : Docker, configs, voice, night engine, scripts |
+| [marc-shade/world-intel-mcp](https://github.com/marc-shade/world-intel-mcp) | MCP 113 tools : géopolitique, marchés, conflits, cyber, climat |
+| [Stewyboy1990/companyscope-mcp](https://github.com/Stewyboy1990/companyscope-mcp) | MCP profils entreprises, brevets, news, tech stack |
+| [Cyreslab-AI/crunchbase-mcp-server](https://github.com/Cyreslab-AI/crunchbase-mcp-server) | MCP données Crunchbase |
+| [assafelovic/gptr-mcp](https://github.com/assafelovic/gptr-mcp) | MCP GPT Researcher (recherche web autonome) |
+| [assafelovic/gpt-researcher](https://github.com/assafelovic/gpt-researcher) | GPT Researcher full version |
+| [eliasbiondo/linkedin-mcp-server](https://github.com/eliasbiondo/linkedin-mcp-server) | MCP accès données LinkedIn |
+| [wanshuiyin/Auto-claude-code-research-in-sleep](https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep) | Aris Night — inspiration pour le Night Engine |
+| [ruvnet/claude-flow](https://github.com/ruvnet/claude-flow) | Ruflo — orchestration multi-agent Claude Code |
+| [openswarm-ai/openswarm](https://github.com/openswarm-ai/openswarm) | Framework swarm agentique distribué |
+| [RobThePCGuy/Claude-Patent-Creator](https://github.com/RobThePCGuy/Claude-Patent-Creator) | Rédaction brevets par IA (exploré, pas en production) |
+| [laguerric/Oneira](https://github.com/laguerric/Oneira) | Agent IA autonome (exploré) |
+| [TauricResearch/TradingAgents](https://github.com/TauricResearch/TradingAgents) | Agents de trading multi-actifs (exploré) |
+| [SOCIALPINE/ergodic-pipeline](https://github.com/SOCIALPINE/ergodic-pipeline) | Pipeline de données ergodiques (exploré) |
+
+### Packages Python (pip)
+
+| Package | Version | Rôle |
+|---------|---------|------|
+| `hermes-agent` | latest (Nous Research, MIT) | Framework IA auto-améliorant |
+| `mempalace-mcp` | 3.3.4 | Mémoire persistante + Knowledge Graph vectoriel (HNSW) |
+| `lightrag-hku` | latest | GraphRAG stratégique relationnel |
+| `edge-tts` | ≥7.2.7 | TTS gratuit — voix Fr-FR-Vivienne |
+
+### Packages Node.js (npm global)
+
+| Package | Rôle |
+|---------|------|
+| `@anthropic-ai/claude-code` | Claude Code CLI |
+| `ruflo` | Orchestration multi-agent, swarm, mémoire vectorielle |
+| `@marp-team/marp-cli` | Présentations Markdown → PDF/PPTX |
+| `@slidev/cli` | Présentations interactives |
+| `pptxgenjs` | Génération PPTX programmatique |
+| `@antv/mcp-server-chart` | MCP 27 types de graphiques |
+| `yahoo-finance-mcp` | MCP données financières Yahoo |
+| `@anthropic/mcp-server-patent` | MCP recherche brevets US (PPUBS, ODP, PTAB) |
+
+---
+
 ## Licence
 
 Propriétaire — DELSOL AI. Usage interne et clients autorisés.
