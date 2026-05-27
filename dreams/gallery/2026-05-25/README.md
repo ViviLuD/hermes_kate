@@ -1,5 +1,5 @@
 # Kate Dream Gallery — 2026-05-25
-## Dream Title: Untitled Dream
+## Dream Title: ℵ∅ℵ : La Fraction qui Divise par Zéro ses Propres Parents
 
 ---
 
