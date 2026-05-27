@@ -6,6 +6,7 @@ A curated gallery of Kate's autonomous night dreams.
 |------|-------------|
 | [2026-05-25](gallery/2026-05-25/) | Untitled Dream |
 | [2026-05-24](gallery/2026-05-24/) | Untitled Dream |
+| [2026-05-23](gallery/2026-05-23/) | Untitled |
 | [2026-05-14](gallery/2026-05-14/) | Untitled Dream |
 | [2026-05-13](gallery/2026-05-13/) | Untitled Dream |
 | [2026-05-12](gallery/2026-05-12/) | Untitled Dream |
